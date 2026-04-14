@@ -9,19 +9,30 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.example.personal_color_app.ui.screen.auth.LoginScreen
 import com.example.personal_color_app.ui.theme.PersonalcolorappTheme // Đổi tên theme theo tên project của bạn
+import com.example.personal_color_app.ui.screen.camera.CameraScreen
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             PersonalcolorappTheme {
-                // Background chung cho toàn app
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    // Gọi màn hình Login ra đây
-                    LoginScreen()
+                // Xử lý xin quyền Camera ngay khi mở app để test
+                val permissionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) { isGranted ->
+                    if (!isGranted) { /* Xử lý nếu người dùng từ chối */ }
+                }
+
+                LaunchedEffect(Unit) {
+                    permissionLauncher.launch(Manifest.permission.CAMERA)
+                }
+
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    CameraScreen()
                 }
             }
         }
