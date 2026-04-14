@@ -71,16 +71,18 @@ fun CameraScreen() {
             modifier = Modifier.fillMaxSize()
         )
 
-        // 2. Lớp ở giữa: Khung nhắm (Overlay) đơn giản để biết chỗ nào đang được phân tích
-        Box(
+        // 2. Lớp ở giữa: Khung Overlay đục lỗ chuyên nghiệp
+        WristScannerOverlay()
+        // Thêm text hướng dẫn người dùng
+        Text(
+            text = "Căn chỉnh cổ tay vào khung nét đứt\nvà phần da phẳng nhất vào ô vuông giữa",
+            color = Color.White,
+            fontSize = 14.sp,
             modifier = Modifier
-                .size(50.dp)
                 .align(Alignment.Center)
-                .background(Color.Transparent)
-        ) {
-            // Vẽ một cái viền nhỏ ở đây nếu muốn
-            Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.3f)))
-        }
+                .padding(top = 180.dp), // Đẩy chữ xuống dưới khung một chút
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
 
         // 3. Lớp trên cùng: Nút bấm và Kết quả
         Column(
