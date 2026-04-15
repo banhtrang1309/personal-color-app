@@ -9,6 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.example.personal_color_app.ui.screen.auth.LoginScreen
 import com.example.personal_color_app.ui.theme.PersonalcolorappTheme // Đổi tên theme theo tên project của bạn
+import com.example.personal_color_app.ui.screen.auth.RegisterScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,7 +22,9 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     // Gọi màn hình Login ra đây
-                    LoginScreen()
+                    //LoginScreen()
+                    // Gọi màn hình Register để test
+                    RegisterScreen()
                 }
             }
         }
