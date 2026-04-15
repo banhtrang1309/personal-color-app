@@ -11,6 +11,7 @@ import com.example.personal_color_app.ui.screen.auth.LoginScreen
 import com.example.personal_color_app.ui.screen.auth.RegisterScreen
 import com.example.personal_color_app.ui.screen.home.HomeScreen
 import com.example.personal_color_app.ui.screen.camera.CameraScreen
+import com.example.personal_color_app.ui.screen.result.ResultScreen // Nhớ import ResultScreen
 import com.example.personal_color_app.ui.theme.PersonalcolorappTheme
 
 class MainActivity : ComponentActivity() {
@@ -32,10 +33,8 @@ class MainActivity : ComponentActivity() {
                                     launchSingleTop = true
                                 }
                             },
-                            // Thêm lệnh chuyển sang Home khi đăng nhập thành công
                             onNavigateToHome = {
                                 navController.navigate(Screen.Home.route) {
-                                    // Xóa màn Login khỏi lịch sử để không bấm Back lùi lại được
                                     popUpTo(Screen.Login.route) { inclusive = true }
                                 }
                             }
@@ -45,7 +44,6 @@ class MainActivity : ComponentActivity() {
                     // 2. Màn Đăng Ký
                     composable(Screen.Register.route) {
                         RegisterScreen(onNavigateToLogin = {
-                            // Quay lại màn trước đó thay vì tạo mới để tối ưu bộ nhớ
                             navController.popBackStack()
                         })
                     }
@@ -59,7 +57,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onLogout = {
-                                // Đăng xuất thì quay về Login VÀ xóa sạch toàn bộ lịch sử
                                 navController.navigate(Screen.Login.route) {
                                     popUpTo(0) { inclusive = true }
                                 }
@@ -69,7 +66,34 @@ class MainActivity : ComponentActivity() {
 
                     // 4. Màn Camera
                     composable(Screen.Camera.route) {
-                        CameraScreen()
+                        CameraScreen(
+                            onColorScanned = { faceHex, wristHex ->
+                                // Bỏ dấu '#' của CẢ 2 mã màu
+                                val cleanFace = faceHex.removePrefix("#")
+                                val cleanWrist = wristHex.removePrefix("#")
+
+                                // Truyền cả 2 vào link URL
+                                navController.navigate("result/$cleanFace/$cleanWrist") {
+                                    popUpTo(Screen.Camera.route) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    // 5. Màn Kết Quả AI (Nhận 2 mã màu)
+                    composable("result/{faceHex}/{wristHex}") { backStackEntry ->
+                        val faceHex = backStackEntry.arguments?.getString("faceHex") ?: "FFFFFF"
+                        val wristHex = backStackEntry.arguments?.getString("wristHex") ?: "FFFFFF"
+
+                        ResultScreen(
+                            faceHexCode = "#$faceHex",   // Truyền xuống ResultScreen
+                            wristHexCode = "#$wristHex", // Truyền xuống ResultScreen
+                            onNavigateBack = {
+                                navController.navigate(Screen.Home.route) {
+                                    popUpTo(Screen.Home.route) { inclusive = true }
+                                }
+                            }
+                        )
                     }
                 }
             }
