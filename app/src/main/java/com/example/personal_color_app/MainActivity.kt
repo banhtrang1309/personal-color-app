@@ -3,36 +3,38 @@ package com.example.personal_color_app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.personal_color_app.ui.screen.Screen
 import com.example.personal_color_app.ui.screen.auth.LoginScreen
-import com.example.personal_color_app.ui.theme.PersonalcolorappTheme // Đổi tên theme theo tên project của bạn
-import com.example.personal_color_app.ui.screen.camera.CameraScreen
-import android.Manifest
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.LaunchedEffect
+import com.example.personal_color_app.ui.screen.auth.RegisterScreen
+import com.example.personal_color_app.ui.theme.PersonalcolorappTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             PersonalcolorappTheme {
-                // Xử lý xin quyền Camera ngay khi mở app để test
-                val permissionLauncher = rememberLauncherForActivityResult(
-                    ActivityResultContracts.RequestPermission()
-                ) { isGranted ->
-                    if (!isGranted) { /* Xử lý nếu người dùng từ chối */ }
-                }
+                val navController = rememberNavController()
 
-                LaunchedEffect(Unit) {
-                    permissionLauncher.launch(Manifest.permission.CAMERA)
-                }
-
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    CameraScreen()
+                NavHost(
+                    navController = navController,
+                    startDestination = Screen.Login.route // Màn hình hiện đầu tiên
+                ) {
+                    composable(Screen.Login.route) {
+                        LoginScreen(onNavigateToRegister = {
+                            navController.navigate(Screen.Register.route){
+                                launchSingleTop = true
+                            }
+                        })
+                    }
+                    composable(Screen.Register.route) {
+                        RegisterScreen(onNavigateToLogin = {
+                            // Quay lại màn trước đó thay vì tạo mới để tối ưu bộ nhớ
+                            navController.popBackStack()
+                        })
+                    }
                 }
             }
         }
