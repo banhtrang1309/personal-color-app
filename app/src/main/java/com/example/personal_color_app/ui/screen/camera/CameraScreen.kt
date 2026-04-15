@@ -1,6 +1,10 @@
 package com.example.personal_color_app.ui.screen.camera
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -27,37 +31,64 @@ import androidx.core.content.ContextCompat
 import com.example.personal_color_app.utils.ColorUtils
 
 @Composable
-fun CameraScreen() {
+fun CameraScreen(onColorScanned: (faceHex: String, wristHex: String) -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    // --- 1. XỬ LÝ XIN QUYỀN CAMERA ---
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { granted -> hasCameraPermission = granted }
+    )
+
+    LaunchedEffect(Unit) {
+        if (!hasCameraPermission) {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    if (!hasCameraPermission) {
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+            Text("Vui lòng cấp quyền Camera để quét màu!", color = Color.White)
+        }
+        return
+    }
+
+    // --- 2. KHỞI TẠO CAMERA ---
+    var isProcessing by remember { mutableStateOf(false) }
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val imageCapture = remember { ImageCapture.Builder().build() }
 
-    // 1. CHÌA KHÓA FIX LỖI: Khởi tạo PreviewView 1 lần duy nhất
-    val previewView = remember { PreviewView(context) }
+    var previewView by remember { mutableStateOf<PreviewView?>(null) }
+    var faceHexColor by remember { mutableStateOf<String?>(null) }
+    var wristHexColor by remember { mutableStateOf<String?>(null) }
 
-    var detectedHexColor by remember { mutableStateOf<String?>(null) }
-    var lensFacing by remember { mutableStateOf(CameraSelector.LENS_FACING_FRONT) }
+    // ĐÃ SỬA: Mặc định là Camera Sau
+    var lensFacing by remember { mutableStateOf(CameraSelector.LENS_FACING_BACK) }
     var isFaceMode by remember { mutableStateOf(true) }
 
-    // 2. CHÌA KHÓA FIX LỖI: Dùng LaunchedEffect để lắng nghe khi biến 'lensFacing' thay đổi
-    LaunchedEffect(lensFacing) {
+    LaunchedEffect(previewView, lensFacing) {
+        val pv = previewView ?: return@LaunchedEffect
         val executor = ContextCompat.getMainExecutor(context)
+
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
 
-            // Kết nối PreviewView với Camera
             val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
+                it.setSurfaceProvider(pv.surfaceProvider)
             }
 
-            // Chọn camera trước hoặc sau dựa trên biến trạng thái
             val cameraSelector = CameraSelector.Builder()
                 .requireLensFacing(lensFacing)
                 .build()
 
             try {
-                // Ngắt kết nối camera cũ trước khi bật camera mới
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(
                     lifecycleOwner,
@@ -72,13 +103,14 @@ fun CameraScreen() {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 3. AndroidView giờ chỉ có nhiệm vụ hiển thị previewView đã được cấu hình
         AndroidView(
-            factory = { previewView },
+            factory = { ctx ->
+                PreviewView(ctx).also { previewView = it }
+            },
             modifier = Modifier.fillMaxSize()
         )
 
-        // Các lớp Overlay và Nút bấm giữ nguyên không đổi
+        // Overlay Khuôn mặt hoặc Cổ tay
         if (isFaceMode) {
             FaceScannerOverlay()
             Text(
@@ -111,7 +143,6 @@ fun CameraScreen() {
             }
 
             TextButton(onClick = {
-                // Đảo ngược trạng thái Camera
                 lensFacing = if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
                     CameraSelector.LENS_FACING_BACK
                 } else {
@@ -122,49 +153,100 @@ fun CameraScreen() {
             }
         }
 
-        // Kết quả & Nút Chụp (Bottom)
+        // CỤM KẾT QUẢ VÀ NÚT CHỤP (Bottom)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            detectedHexColor?.let { hex ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(30.dp)
-                            .background(color = Color(android.graphics.Color.parseColor(hex)), shape = CircleShape)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Màu của bạn: $hex",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        modifier = Modifier.background(Color.Black.copy(alpha = 0.5f)).padding(4.dp)
-                    )
-                }
+            // Hiện mã màu khuôn mặt nếu đang ở mode Cổ tay VÀ đã quét mặt trước đó
+            if (!isFaceMode && faceHexColor != null) {
+                ColorResultBadge(title = "Màu da mặt đã quét", hex = faceHexColor!!)
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            Button(onClick = {
-                imageCapture.takePicture(
-                    ContextCompat.getMainExecutor(context),
-                    object : ImageCapture.OnImageCapturedCallback() {
-                        override fun onCaptureSuccess(image: ImageProxy) {
-                            super.onCaptureSuccess(image)
-                            val bitmap = image.toBitmap()
-                            detectedHexColor = ColorUtils.getAverageColorFromCenter(bitmap)
-                            image.close()
+            // Hiện mã màu cổ tay nếu đang ở mode Mặt VÀ đã quét cổ tay trước đó
+            if (isFaceMode && wristHexColor != null) {
+                ColorResultBadge(title = "Màu cổ tay đã quét", hex = wristHexColor!!)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // Nút bấm chụp ảnh
+            Button(
+                enabled = !isProcessing,
+                onClick = {
+                    isProcessing = true
+
+                    imageCapture.takePicture(
+                        ContextCompat.getMainExecutor(context),
+                        object : ImageCapture.OnImageCapturedCallback() {
+                            override fun onCaptureSuccess(image: ImageProxy) {
+                                super.onCaptureSuccess(image)
+                                val bitmap = image.toBitmap()
+                                val hex = ColorUtils.getAverageColorFromCenter(bitmap) ?: "#FFFFFF"
+
+                                // ĐÃ SỬA: Logic quét tự do
+                                if (isFaceMode) {
+                                    faceHexColor = hex
+                                    // Nếu chưa quét tay thì tự nhảy sang mode quét tay
+                                    if (wristHexColor == null) isFaceMode = false
+                                } else {
+                                    wristHexColor = hex
+                                    // Nếu chưa quét mặt thì tự nhảy sang mode quét mặt
+                                    if (faceHexColor == null) isFaceMode = true
+                                }
+
+                                // Nếu đã có đủ 2 dữ liệu thì gửi đi!
+                                if (faceHexColor != null && wristHexColor != null) {
+                                    onColorScanned(faceHexColor!!, wristHexColor!!)
+                                }
+
+                                image.close()
+                                isProcessing = false
+                            }
+                            override fun onError(exception: ImageCaptureException) {
+                                Log.e("CameraScreen", "Chụp thất bại: ${exception.message}")
+                                isProcessing = false
+                            }
                         }
-                        override fun onError(exception: ImageCaptureException) {
-                            Log.e("CameraScreen", "Chụp thất bại: ${exception.message}")
-                        }
-                    }
+                    )
+                }
+            ) {
+                // ĐÃ SỬA: Logic hiển thị chữ trên nút thông minh hơn
+                val isStep2 = (isFaceMode && wristHexColor != null) || (!isFaceMode && faceHexColor != null)
+                val stepText = if (isStep2) "(2/2)" else "(1/2)"
+
+                Text(
+                    text = if (isProcessing) "Đang phân tích..."
+                    else if (isFaceMode) "Quét Khuôn Mặt $stepText"
+                    else "Quét Cổ Tay $stepText",
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 16.dp)
                 )
-            }) {
-                Text("Quét Màu")
             }
         }
+    }
+}
+
+// Hàm UI phụ để tái sử dụng việc hiển thị cái thẻ màu
+@Composable
+fun ColorResultBadge(title: String, hex: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(30.dp)
+                .background(
+                    color = Color(android.graphics.Color.parseColor(hex)),
+                    shape = CircleShape
+                )
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "$title: $hex",
+            color = Color.White,
+            fontSize = 16.sp,
+            modifier = Modifier.background(Color.Black.copy(alpha = 0.5f)).padding(4.dp)
+        )
     }
 }

@@ -5,4 +5,5 @@ sealed class Screen(val route: String) {
     object Register : Screen("register")
     object Home : Screen("home")       // Thêm màn hình chính
     object Camera : Screen("camera")   // Thêm màn hình quét camera
+    object Result : Screen("result/{hex}") // Nhận mã màu HEX từ Camera truyền sang
 }
