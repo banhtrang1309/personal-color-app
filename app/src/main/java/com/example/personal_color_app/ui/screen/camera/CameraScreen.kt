@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,77 +31,110 @@ fun CameraScreen() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-
-    // Tạo đối tượng ImageCapture để chịu trách nhiệm chụp ảnh
     val imageCapture = remember { ImageCapture.Builder().build() }
 
-    // Biến lưu trữ kết quả màu sắc để hiển thị lên UI
+    // 1. CHÌA KHÓA FIX LỖI: Khởi tạo PreviewView 1 lần duy nhất
+    val previewView = remember { PreviewView(context) }
+
     var detectedHexColor by remember { mutableStateOf<String?>(null) }
+    var lensFacing by remember { mutableStateOf(CameraSelector.LENS_FACING_FRONT) }
+    var isFaceMode by remember { mutableStateOf(true) }
+
+    // 2. CHÌA KHÓA FIX LỖI: Dùng LaunchedEffect để lắng nghe khi biến 'lensFacing' thay đổi
+    LaunchedEffect(lensFacing) {
+        val executor = ContextCompat.getMainExecutor(context)
+        cameraProviderFuture.addListener({
+            val cameraProvider = cameraProviderFuture.get()
+
+            // Kết nối PreviewView với Camera
+            val preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(previewView.surfaceProvider)
+            }
+
+            // Chọn camera trước hoặc sau dựa trên biến trạng thái
+            val cameraSelector = CameraSelector.Builder()
+                .requireLensFacing(lensFacing)
+                .build()
+
+            try {
+                // Ngắt kết nối camera cũ trước khi bật camera mới
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    imageCapture
+                )
+            } catch (e: Exception) {
+                Log.e("CameraScreen", "Lỗi khi đổi camera", e)
+            }
+        }, executor)
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. Lớp dưới cùng: Camera Preview
+        // 3. AndroidView giờ chỉ có nhiệm vụ hiển thị previewView đã được cấu hình
         AndroidView(
-            factory = { ctx ->
-                val previewView = PreviewView(ctx)
-                val executor = ContextCompat.getMainExecutor(ctx)
-
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
-                    val preview = Preview.Builder().build().also {
-                        it.setSurfaceProvider(previewView.surfaceProvider)
-                    }
-
-                    // Tạm thời dùng Cam sau (sau này quét mặt thì đổi thành Cam trước)
-                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-                    try {
-                        cameraProvider.unbindAll()
-                        // Ràng buộc cả Preview và ImageCapture vào Vòng đời
-                        cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            cameraSelector,
-                            preview,
-                            imageCapture
-                        )
-                    } catch (e: Exception) {
-                        Log.e("CameraScreen", "Binding failed", e)
-                    }
-                }, executor)
-                previewView
-            },
+            factory = { previewView },
             modifier = Modifier.fillMaxSize()
         )
 
-        // 2. Lớp ở giữa: Khung Overlay đục lỗ chuyên nghiệp
-        WristScannerOverlay()
-        // Thêm text hướng dẫn người dùng
-        Text(
-            text = "Căn chỉnh cổ tay vào khung nét đứt\nvà phần da phẳng nhất vào ô vuông giữa",
-            color = Color.White,
-            fontSize = 14.sp,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(top = 180.dp), // Đẩy chữ xuống dưới khung một chút
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
+        // Các lớp Overlay và Nút bấm giữ nguyên không đổi
+        if (isFaceMode) {
+            FaceScannerOverlay()
+            Text(
+                text = "Căn chỉnh khuôn mặt vào khung\nvà đặt vùng MÁ vào ô vuông",
+                color = Color.White,
+                fontSize = 14.sp,
+                modifier = Modifier.align(Alignment.Center).padding(top = 220.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        } else {
+            WristScannerOverlay()
+            Text(
+                text = "Căn chỉnh cổ tay vào khung\nvà vùng phẳng nhất vào ô vuông",
+                color = Color.White,
+                fontSize = 14.sp,
+                modifier = Modifier.align(Alignment.Center).padding(top = 180.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
 
-        // 3. Lớp trên cùng: Nút bấm và Kết quả
+        // Cụm Nút điều khiển (Top)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 32.dp, start = 16.dp, end = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            TextButton(onClick = { isFaceMode = !isFaceMode }) {
+                Text(if (isFaceMode) "Đổi sang Cổ tay" else "Đổi sang Khuôn mặt", color = Color.White)
+            }
+
+            TextButton(onClick = {
+                // Đảo ngược trạng thái Camera
+                lensFacing = if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
+                    CameraSelector.LENS_FACING_BACK
+                } else {
+                    CameraSelector.LENS_FACING_FRONT
+                }
+            }) {
+                Text("Xoay Camera", color = Color.White)
+            }
+        }
+
+        // Kết quả & Nút Chụp (Bottom)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Hiển thị màu đã quét được
             detectedHexColor?.let { hex ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .size(30.dp)
-                            .background(
-                                color = Color(android.graphics.Color.parseColor(hex)),
-                                shape = CircleShape
-                            )
+                            .background(color = Color(android.graphics.Color.parseColor(hex)), shape = CircleShape)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -113,24 +147,16 @@ fun CameraScreen() {
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Nút Chụp
             Button(onClick = {
-                // Xử lý chụp ảnh trong bộ nhớ (In-memory)
                 imageCapture.takePicture(
                     ContextCompat.getMainExecutor(context),
                     object : ImageCapture.OnImageCapturedCallback() {
                         override fun onCaptureSuccess(image: ImageProxy) {
                             super.onCaptureSuccess(image)
-                            // Đổi ImageProxy thành Bitmap (có sẵn ở CameraX 1.3+)
                             val bitmap = image.toBitmap()
-
-                            // Gọi hàm phân tích màu
                             detectedHexColor = ColorUtils.getAverageColorFromCenter(bitmap)
-
-                            // QUAN TRỌNG: Phải đóng image sau khi dùng xong để tránh tràn RAM
                             image.close()
                         }
-
                         override fun onError(exception: ImageCaptureException) {
                             Log.e("CameraScreen", "Chụp thất bại: ${exception.message}")
                         }
