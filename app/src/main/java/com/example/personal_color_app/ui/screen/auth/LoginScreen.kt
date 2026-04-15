@@ -1,5 +1,6 @@
 package com.example.personal_color_app.ui.screen.auth
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -10,7 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(onNavigateToRegister: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -62,6 +63,25 @@ fun LoginScreen() {
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
             Text("Tiếp tục với Số điện thoại", fontSize = 16.sp)
+        }
+
+        // --- ĐOẠN CODE BỔ SUNG ĐỂ CHUYỂN TRANG ---
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "Chưa có tài khoản? ",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Đăng ký ngay",
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                // Modifier.clickable là nơi kích hoạt sự kiện chuyển trang
+                modifier = Modifier.clickable {
+                    onNavigateToRegister()
+                }
+            )
         }
     }
 }

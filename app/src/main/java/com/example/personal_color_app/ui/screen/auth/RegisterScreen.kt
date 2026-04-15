@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun RegisterScreen() {
+fun RegisterScreen(onNavigateToLogin: () -> Unit) {
     // Biến quản lý trạng thái Tab: 0 là Gmail, 1 là Số điện thoại
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Gmail", "Số điện thoại")
@@ -106,8 +106,8 @@ fun RegisterScreen() {
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.clickable {
-                    // TODO: Chuyển về LoginScreen
-                }
+                    onNavigateToLogin()
+                } // Gọi hàm khi click
             )
         }
     }
