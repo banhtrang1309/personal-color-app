@@ -11,7 +11,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun LoginScreen(onNavigateToRegister: () -> Unit) {
+fun LoginScreen(
+    onNavigateToRegister: () -> Unit,
+    onNavigateToHome: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -29,7 +32,10 @@ fun LoginScreen(onNavigateToRegister: () -> Unit) {
 
         // Nút Đăng nhập bằng Google
         Button(
-            onClick = { /* Xử lý Login Google sau */ },
+            onClick = {
+                // Tạm thời gọi lệnh này để giả vờ đăng nhập thành công
+                onNavigateToHome()
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
