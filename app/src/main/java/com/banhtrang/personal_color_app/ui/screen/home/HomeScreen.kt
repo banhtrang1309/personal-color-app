@@ -8,11 +8,14 @@ import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import com.banhtrang.personal_color_app.data.AuthRepository
 
 @Composable
 fun HomeScreen(
@@ -34,8 +37,14 @@ fun HomeScreen(
                 Text(text = "Xin chào,", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(text = "Tín đồ thời trang!", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
-
-            IconButton(onClick = { onLogout() }) {
+            // Lấy context hiện tại của màn hình
+            val context = LocalContext.current
+            val authRepository = remember { AuthRepository() }
+            IconButton(
+                onClick = {
+                    authRepository.logout(context)
+                    onLogout()
+                }) {
                 Icon(
                     imageVector = Icons.Rounded.AccountCircle,
                     contentDescription = "Profile",

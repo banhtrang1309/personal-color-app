@@ -3,15 +3,17 @@ package com.banhtrang.personal_color_app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.remember
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.banhtrang.personal_color_app.data.AuthRepository
 import com.banhtrang.personal_color_app.ui.screen.Screen
 import com.banhtrang.personal_color_app.ui.screen.auth.LoginScreen
 import com.banhtrang.personal_color_app.ui.screen.auth.RegisterScreen
 import com.banhtrang.personal_color_app.ui.screen.home.HomeScreen
 import com.banhtrang.personal_color_app.ui.screen.camera.CameraScreen
-import com.banhtrang.personal_color_app.ui.screen.result.ResultScreen // Nhớ import ResultScreen
+import com.banhtrang.personal_color_app.ui.screen.result.ResultScreen
 import com.banhtrang.personal_color_app.ui.theme.PersonalcolorappTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,10 +22,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             PersonalcolorappTheme {
                 val navController = rememberNavController()
+                // 1. Khởi tạo "Bộ não" ngay tại cổng vào của App
+                val authRepository = remember { AuthRepository() }
 
+                // 2. Xét duyệt vé: Đã có tài khoản chưa?
+                val startScreen = if (authRepository.isUserLoggedIn()) {
+                    Screen.Home.route    // Có rồi -> Vào thẳng nhà
+                } else {
+                    Screen.Login.route   // Chưa có -> Mời ra cửa đăng nhập
+                }
                 NavHost(
                     navController = navController,
-                    startDestination = Screen.Login.route // Mặc định mở app lên là Login
+                    startDestination = startScreen // Mặc định mở app lên là Login
                 ) {
                     // 1. Màn Đăng Nhập
                     composable(Screen.Login.route) {
@@ -43,9 +53,17 @@ class MainActivity : ComponentActivity() {
 
                     // 2. Màn Đăng Ký
                     composable(Screen.Register.route) {
-                        RegisterScreen(onNavigateToLogin = {
-                            navController.popBackStack()
-                        })
+                        RegisterScreen(
+                            onNavigateToLogin = {
+                                navController.popBackStack()
+                            },
+                            // THÊM ĐOẠN NÀY ĐỂ SỬA LỖI: Cấp đường tới Home cho Google Sign-in
+                            onNavigateToHome = {
+                                navController.navigate(Screen.Home.route) {
+                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                }
+                            }
+                        )
                     }
 
                     // 3. Màn Trang Chủ
