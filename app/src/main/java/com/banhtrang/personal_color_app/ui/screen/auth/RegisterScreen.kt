@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.banhtrang.personal_color_app.data.AuthRepository
+import com.banhtrang.personal_color_app.utils.AuthErrorHandler // ĐÃ THÊM IMPORT
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -48,13 +49,23 @@ fun RegisterScreen(
         try {
             val account = task.getResult(ApiException::class.java)
             account.idToken?.let { token ->
+                isLoading = true // ĐÃ THÊM: Bật loading
                 scope.launch {
                     val authResult = authRepository.signInWithGoogle(token)
-                    if (authResult.isSuccess) onNavigateToHome()
+                    isLoading = false // ĐÃ THÊM: Tắt loading
+
+                    if (authResult.isSuccess) {
+                        Toast.makeText(context, "Đăng nhập Google thành công!", Toast.LENGTH_SHORT).show()
+                        onNavigateToHome()
+                    } else {
+                        // ĐÃ THÊM: Dịch lỗi Google
+                        val errorMsg = AuthErrorHandler.getMessage(authResult.exceptionOrNull())
+                        Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         } catch (e: Exception) {
-            Toast.makeText(context, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Đã hủy đăng nhập Google", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -78,17 +89,35 @@ fun RegisterScreen(
         Button(
             enabled = !isLoading,
             onClick = {
-                if (password != confirmPassword) return@Button
+                // ĐÃ THÊM: Cảnh báo nếu để trống
+                if (email.isBlank() || password.isBlank()) {
+                    Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+                // ĐÃ THÊM: Cảnh báo nếu pass không khớp
+                if (password != confirmPassword) {
+                    Toast.makeText(context, "Mật khẩu xác nhận không khớp", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
                 isLoading = true
                 scope.launch {
                     val result = authRepository.register(email, password)
                     isLoading = false
-                    if (result.isSuccess) {onNavigateToLogin()}
+
+                    if (result.isSuccess) {
+                        Toast.makeText(context, "Đăng ký thành công! Vui lòng đăng nhập.", Toast.LENGTH_SHORT).show()
+                        onNavigateToLogin()
+                    } else {
+                        // ĐÃ THÊM: Dịch lỗi khi đăng ký bằng Email
+                        val errorMsg = AuthErrorHandler.getMessage(result.exceptionOrNull())
+                        Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth().height(50.dp)
         ) {
-            Text("Đăng ký ngay")
+            Text(if (isLoading) "Đang xử lý..." else "Đăng ký ngay")
         }
 
         Spacer(modifier = Modifier.height(24.dp))

@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.banhtrang.personal_color_app.data.AuthRepository
+import com.banhtrang.personal_color_app.utils.AuthErrorHandler // ĐÃ THÊM IMPORT TỪ ĐIỂN LỖI
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -48,13 +49,22 @@ fun LoginScreen(
         try {
             val account = task.getResult(ApiException::class.java)
             account.idToken?.let { token ->
+                isLoading = true // ĐÃ THÊM: Bật hiệu ứng loading khi bắt đầu gửi token lên Firebase
                 scope.launch {
                     val authResult = authRepository.signInWithGoogle(token)
-                    if (authResult.isSuccess) onNavigateToHome()
+                    isLoading = false // ĐÃ THÊM: Tắt loading khi có kết quả
+
+                    if (authResult.isSuccess) {
+                        onNavigateToHome()
+                    } else {
+                        // ĐÃ THÊM: Gọi từ điển dịch lỗi cho Google Sign-in
+                        val errorMsg = AuthErrorHandler.getMessage(authResult.exceptionOrNull())
+                        Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         } catch (e: Exception) {
-            Toast.makeText(context, "Lỗi Google: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Đã hủy đăng nhập Google", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -66,25 +76,77 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(48.dp))
-        Text("Personal Color AI", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        Text(
+            "Personal Color AI",
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Mật khẩu") }, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation())
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Mật khẩu") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation()
+        )
+        // --- ĐOẠN CODE MỚI THÊM: NÚT QUÊN MẬT KHẨU ---
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+            Text(
+                text = "Quên mật khẩu?",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .clickable {
+                        if (email.isBlank()) {
+                            Toast.makeText(context, "Vui lòng nhập Email của bạn lên ô trên trước!", Toast.LENGTH_SHORT).show()
+                            return@clickable
+                        }
+                        isLoading = true
+                        scope.launch {
+                            val resetResult = authRepository.resetPassword(email)
+                            isLoading = false
+                            if (resetResult.isSuccess) {
+                                Toast.makeText(context, "Đã gửi link đặt lại mật khẩu! Vui lòng kiểm tra hộp thư Gmail của bạn.", Toast.LENGTH_LONG).show()
+                            } else {
+                                val errorMsg = AuthErrorHandler.getMessage(resetResult.exceptionOrNull())
+                                Toast.makeText(context, "Lỗi: $errorMsg", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+            )
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             enabled = !isLoading,
             onClick = {
-                if (email.isBlank() || password.isBlank()) return@Button
+                if (email.isBlank() || password.isBlank()) {
+                    Toast.makeText(context, "Vui lòng nhập Email và Mật khẩu!", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
                 isLoading = true
                 scope.launch {
                     val result = authRepository.login(email, password)
                     isLoading = false
-                    if (result.isSuccess) onNavigateToHome()
+                    if (result.isSuccess) {
+                        onNavigateToHome()
+                    } else {
+                        // ĐÃ THÊM: Gọi từ điển dịch lỗi cho Email/Password
+                        val errorMsg = AuthErrorHandler.getMessage(result.exceptionOrNull())
+                        Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth().height(50.dp)

@@ -50,4 +50,14 @@ class AuthRepository {
         val googleSignInClient = GoogleSignIn.getClient(context, gso)
         googleSignInClient.signOut()
     }
+
+    // --- QUÊN MẬT KHẨU ---
+    suspend fun resetPassword(email: String): Result<Unit> {
+        return try {
+            firebaseAuth.sendPasswordResetEmail(email).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
