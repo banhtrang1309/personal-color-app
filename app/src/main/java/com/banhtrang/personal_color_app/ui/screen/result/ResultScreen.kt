@@ -52,10 +52,10 @@ fun ResultScreen(
     LaunchedEffect(Unit) {
         scope.launch {
             try {
+                // Cố gắng gọi AI
                 val jsonString = repository.analyzePersonalColor(faceHexCode, wristHexCode)
                 val json = JSONObject(jsonString)
 
-                // Parse dữ liệu từ JSON
                 val paletteArray = json.getJSONArray("palette")
                 val paletteList = mutableListOf<String>()
                 for (i in 0 until paletteArray.length()) {
@@ -70,9 +70,33 @@ fun ResultScreen(
                     makeupTips = json.getString("makeupTips")
                 )
                 isLoading = false
+
             } catch (e: Exception) {
-                errorMessage = "Không thể phân tích dữ liệu. Vui lòng thử lại!"
+                // BẮT ĐƯỢC LỖI THỰC SỰ RỒI!
                 isLoading = false
+
+                val rawError = e.message ?: "Lỗi không xác định"
+
+                // Màng lọc lỗi thông minh
+                errorMessage = when {
+                    // Nếu lỗi do Server quá tải (503)
+                    rawError.contains("503") || rawError.contains("high demand") ->
+                        "Hệ thống AI đang quá tải. Vui lòng thử lại sau vài phút nhé!"
+
+                    // Nếu do mất mạng
+                    rawError.contains("Unable to resolve host") || rawError.contains("timeout") ->
+                        "Mạng yếu hoặc không có kết nối internet. Vui lòng kiểm tra lại Wifi/4G."
+
+                    // Nếu API Key có vấn đề
+                    rawError.contains("API key not valid") ->
+                        "Khóa kết nối AI (API Key) không hợp lệ."
+
+                    // Các lỗi lạ khác (Rút gọn bớt để không tràn màn hình)
+                    else -> "Đã xảy ra sự cố: Rất tiếc không thể kết nối AI lúc này."
+                }
+
+                // Vẫn in log đầy đủ để Dev dễ dò lỗi ngầm
+                android.util.Log.e("LOI_AI_CUA_HIEU", "Chi tiết lỗi nguyên thủy: ", e)
             }
         }
     }
