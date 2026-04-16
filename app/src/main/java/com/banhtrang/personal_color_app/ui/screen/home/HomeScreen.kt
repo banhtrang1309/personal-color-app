@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.History // THÊM IMPORT ICON HISTORY
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -20,7 +21,8 @@ import com.banhtrang.personal_color_app.data.AuthRepository
 @Composable
 fun HomeScreen(
     onNavigateToCamera: () -> Unit,
-    onLogout: () -> Unit // Thêm hàm đăng xuất để quay về màn Login
+    onNavigateToHistory: () -> Unit, // ĐÃ THÊM: Hàm chuyển hướng tới Lịch sử
+    onLogout: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -37,7 +39,6 @@ fun HomeScreen(
                 Text(text = "Xin chào,", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(text = "Tín đồ thời trang!", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
-            // Lấy context hiện tại của màn hình
             val context = LocalContext.current
             val authRepository = remember { AuthRepository() }
             IconButton(
@@ -61,7 +62,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(180.dp)
-                .clickable { onNavigateToCamera() }, // Bấm vào thẻ sẽ mở Camera
+                .clickable { onNavigateToCamera() },
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
@@ -86,9 +87,40 @@ fun HomeScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // --- 3. Thẻ chức năng phụ (Nút xem Lịch sử) - ĐÃ THÊM ---
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .clickable { onNavigateToHistory() },
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.History,
+                    contentDescription = "Lịch sử",
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = "Lịch sử phân tích",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(40.dp))
 
-        // --- 3. Khu vực chờ tính năng AI ---
+        // --- 4. Khu vực chờ tính năng AI ---
         Text(
             text = "Gợi ý cho bạn",
             fontSize = 20.sp,
@@ -100,7 +132,6 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
-            PaddingValues(16.dp)
             Text(
                 text = "Hãy thực hiện quét màu sắc cá nhân để AI gợi ý trang phục và màu son phù hợp nhất với bạn nhé!",
                 modifier = Modifier.padding(16.dp),
