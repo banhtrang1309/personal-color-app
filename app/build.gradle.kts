@@ -2,6 +2,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 // Khai báo biến để đọc file local.properties
@@ -11,7 +12,7 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 android {
-    namespace = "com.example.personal_color_app"
+    namespace = "com.banhtrang.personal_color_app"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -19,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.personal_color_app"
+        applicationId = "com.banhtrang.personal_color_app"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -75,7 +76,10 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:${camerax_version}")
     implementation("androidx.camera:camera-view:${camerax_version}")
     implementation("androidx.camera:camera-extensions:${camerax_version}")
-    implementation("androidx.navigation:navigation-compose:2.8.0")
+    implementation("androidx.navigation:navigation-compose:2.9.7")
     implementation("androidx.compose.material:material-icons-extended")
-    implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.android.gms:play-services-auth:21.5.1")
 }

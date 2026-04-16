@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "650681549039",
+    "project_id": "personal-color-app-40770",
+    "storage_bucket": "personal-color-app-40770.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:650681549039:android:7bd9e3b555ad090f7cdb1a",
+        "android_client_info": {
+          "package_name": "com.banhtrang.personal_color_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "650681549039-phnnsu23jp6dbq084nmepikogs0bnt7d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.banhtrang.personal_color_app",
+            "certificate_hash": "1309c45fc9c3e2256a2ca254bef2ce8f7fcc2f6b"
+          }
+        },
+        {
+          "client_id": "650681549039-27nc6oum5rq28svn16o83pnlo6e4vf96.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIYIk_zDvF2A9YP5a_9zYVUVnRRLGWfhA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "650681549039-27nc6oum5rq28svn16o83pnlo6e4vf96.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
