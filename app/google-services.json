@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "650681549039",
+    "project_id": "personal-color-app-40770",
+    "storage_bucket": "personal-color-app-40770.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:650681549039:android:7bd9e3b555ad090f7cdb1a",
+        "android_client_info": {
+          "package_name": "com.banhtrang.personal_color_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIYIk_zDvF2A9YP5a_9zYVUVnRRLGWfhA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
